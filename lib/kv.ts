@@ -1,5 +1,5 @@
 // Simple in-memory KV store for local development
-// Replace this with @vercel/kv in production
+// Works with both Vercel KV and Redis
 
 import { kv as vercelKV } from '@vercel/kv';
 
@@ -31,5 +31,7 @@ if (!globalForKV.kvStore) {
   globalForKV.kvStore = new LocalKV();
 }
 
-// Use Vercel KV in production, local KV for development
-export const kv = process.env.KV_REST_API_URL ? vercelKV : globalForKV.kvStore;
+// Use Vercel KV or Redis in production, local KV for development
+export const kv = (process.env.KV_REST_API_URL || process.env.REDIS_URL) 
+  ? vercelKV 
+  : globalForKV.kvStore;
