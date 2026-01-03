@@ -1,6 +1,8 @@
 // Simple in-memory KV store for local development
 // Replace this with @vercel/kv in production
 
+import { kv as vercelKV } from '@vercel/kv';
+
 class LocalKV {
   private store: Map<string, any> = new Map();
 
@@ -29,7 +31,5 @@ if (!globalForKV.kvStore) {
   globalForKV.kvStore = new LocalKV();
 }
 
-// Use local KV for development if environment variables are not set
-export const kv = process.env.KV_REST_API_URL?.startsWith('http') 
-  ? require('@vercel/kv').kv 
-  : globalForKV.kvStore;
+// Use Vercel KV in production, local KV for development
+export const kv = process.env.KV_REST_API_URL ? vercelKV : globalForKV.kvStore;
