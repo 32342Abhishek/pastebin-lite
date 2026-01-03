@@ -24,8 +24,7 @@ export default async function handler(req, res) {
 
   // Use Vercel URL in production, localhost in development
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-                  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                  'http://localhost:3000';
+                  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
   
   res.status(200).json({
     id,

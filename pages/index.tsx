@@ -8,17 +8,29 @@ export default function Home() {
   const [link, setLink] = useState("");
 
   const submit = async () => {
-    const res = await fetch("/api/pastes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content,
-        ttl_seconds: ttl ? Number(ttl) : undefined,
-        max_views: views ? Number(views) : undefined
-      })
-    });
-    const data = await res.json();
-    setLink(data.url);
+    try {
+      const res = await fetch("/api/pastes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          ttl_seconds: ttl ? Number(ttl) : undefined,
+          max_views: views ? Number(views) : undefined
+        })
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        alert(`Error: ${error.error || 'Failed to create paste'}`);
+        return;
+      }
+      
+      const data = await res.json();
+      setLink(data.url);
+    } catch (error) {
+      console.error('Failed to create paste:', error);
+      alert('Failed to create paste. Please try again.');
+    }
   };
 
   return (
