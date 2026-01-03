@@ -1,8 +1,6 @@
 // Simple in-memory KV store for local development
 // Works with both Vercel KV and Redis
 
-import { kv as vercelKV } from '@vercel/kv';
-
 class LocalKV {
   private store: Map<string, any> = new Map();
 
@@ -22,16 +20,73 @@ class LocalKV {
   }
 }
 
+// Redis adapter to match KV interface
+class RedisKV {
+  private client: any;
+  
+  constructor() {
+    const { createClient } = require('redis');
+    this.client = createClient({
+      url: process.env.REDIS_URL
+    });
+    this.client.connect().catch(console.error);
+  }
+
+  async get(key: string) {
+    try {
+      const value = await this.client.get(key);
+      return value ? JSON.parse(value) : null;
+    } catch (error) {
+      console.error('Redis get error:', error);
+      return null;
+    }
+  }
+
+  async set(key: string, value: any) {
+    try {
+      await this.client.set(key, JSON.stringify(value));
+      return "OK";
+    } catch (error) {
+      console.error('Redis set error:', error);
+      throw error;
+    }
+  }
+
+  async del(key: string) {
+    try {
+      return await this.client.del(key);
+    } catch (error) {
+      console.error('Redis del error:', error);
+      return 0;
+    }
+  }
+}
+
 // Create a global singleton to persist across hot reloads
 const globalForKV = global as typeof globalThis & {
   kvStore?: LocalKV;
+  redisStore?: RedisKV;
 };
 
 if (!globalForKV.kvStore) {
   globalForKV.kvStore = new LocalKV();
 }
 
-// Use Vercel KV or Redis in production, local KV for development
-export const kv = (process.env.KV_REST_API_URL || process.env.REDIS_URL) 
-  ? vercelKV 
-  : globalForKV.kvStore;
+// Initialize store based on available environment variables
+let store;
+if (process.env.KV_REST_API_URL) {
+  // Use Vercel KV
+  const { kv: vercelKV } = require('@vercel/kv');
+  store = vercelKV;
+} else if (process.env.REDIS_URL) {
+  // Use standard Redis
+  if (!globalForKV.redisStore) {
+    globalForKV.redisStore = new RedisKV();
+  }
+  store = globalForKV.redisStore;
+} else {
+  // Use local in-memory store for development
+  store = globalForKV.kvStore;
+}
+
+export const kv = store;
